@@ -18,9 +18,17 @@ function Get-TargetResource {
             Credential = $Credential;
             DatabaseName = '';
         }
-        if (TestMSSQLDatabase -DatabaseServer $DatabaseServer -DatabaseName $DatabaseName -Credential $Credential) {
-            $targetResource['DatabaseName'] = $DatabaseName;
+
+        if ($Credential) {
+            if (TestMSSQLDatabase -DatabaseServer $DatabaseServer -DatabaseName $DatabaseName -Credential $Credential) {
+                $targetResource['DatabaseName'] = $DatabaseName;
+            }        
+        } else {
+            if (TestMSSQLDatabase -DatabaseServer $DatabaseServer -DatabaseName $DatabaseName) {
+                $targetResource['DatabaseName'] = $DatabaseName;
+            }        
         }
+
         return $targetResource;
     } #end process
 } #end function Get-TargetResource
@@ -68,13 +76,23 @@ function Set-TargetResource {
         $scriptBlock = {
             Import-Module "$env:ProgramFiles\Citrix\XenDesktopPoshSdk\Module\Citrix.XenDesktop.Admin.V1\Citrix.XenDesktop.Admin\Citrix.XenDesktop.Admin.psd1" -Verbose:$false;
             
-            $newXDDatabaseParams = @{
-                DatabaseServer = $using:DatabaseServer;
-                DatabaseName = $using:DatabaseName;
-                DataStore = $using:DataStore;
-                SiteName = $using:SiteName;
-                DatabaseCredentials = $using:Credential;
+            if ($Credential) {
+                $newXDDatabaseParams = @{
+                    DatabaseServer = $using:DatabaseServer;
+                    DatabaseName = $using:DatabaseName;
+                    DataStore = $using:DataStore;
+                    SiteName = $using:SiteName;
+                    DatabaseCredentials = $using:Credential;
+                }
+            } else {
+                $newXDDatabaseParams = @{
+                    DatabaseServer = $using:DatabaseServer;
+                    DatabaseName = $using:DatabaseName;
+                    DataStore = $using:DataStore;
+                    SiteName = $using:SiteName;
+                }
             }
+
             Write-Verbose ($using:localizedData.CreatingXDDatabase -f $using:DataStore, $using:DatabaseName, $using:DatabaseServer);
             New-XDDatabase @newXDDatabaseParams;
         } #end scriptBlock
